@@ -10,7 +10,7 @@ from exceptions.exceptions import UTIError
 
 
 ##CODIGO DE EJEMPLO
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 
 STATE = {"value": 0}
 
