@@ -1,7 +1,10 @@
+import json
 from tkinter.constants import CENTER
 import PySimpleGUI as sg
+import websockets
+import asyncio
 
-def main():
+async def main():
     windows = {
         "main": crear_ventana_principal()
     }
@@ -77,6 +80,17 @@ def ocupar_cama(id):
 def desocupar_cama(id):
     print("Desocupar cama", id)
 
+async def hello():
+    uri = "ws://127.0.0.1:6789/"
+    async with websockets.connect(uri) as websocket:
+        await websocket.send(json.dumps({"operation": 1}, separators=(',', ':')))
+        response = await websocket.recv()
+        print(response)
+        response = await websocket.recv()
+        print(response)
+        response = await websocket.recv()
+        print(response)
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.get_event_loop().run_until_complete(main())
