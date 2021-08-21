@@ -5,7 +5,7 @@ import json
 import logging
 import websockets
 from handler.handler import HANDLERS
-from enums.codeErrors import Errors
+from enums.codeErrors import CodeError
 from exceptions.exceptions import UTIError
 
 
@@ -74,9 +74,9 @@ def validMessage(message):
     msg = json.loads(message)
     logging.info(msg)
     if (not ('operation' in msg) or not(msg['operation'] in HANDLERS)):
-        raise UTIError(Errors.INVALID_OPERATION.value)
+        raise UTIError(CodeError.INVALID_OPERATION)
     if (not ('data' in msg)):
-        raise UTIError(Errors.INVALID_DATA.value)
+        raise UTIError(CodeError.INVALID_DATA)
     return msg
 
 #Metodo que envia mensaje de error a un cliente en especifico
