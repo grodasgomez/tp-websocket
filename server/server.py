@@ -7,27 +7,65 @@ import websockets
 from handler.handler import HANDLERS
 from enums.codeErrors import CodeError
 from exceptions.exceptions import UTIError
-from connections import connections
 
 
+##CODIGO DE EJEMPLO
 logging.basicConfig(level=logging.INFO)
+
+STATE = {"value": 0}
+
+USERS = set()
+
+def state_event():
+    return json.dumps({"type": "state", **STATE})
+
+
+def users_event():
+    return json.dumps({"type": "users", "count": len(USERS)})
+
+
+async def notify_state():
+    if USERS:  # asyncio.wait doesn't accept an empty list
+        message = state_event()
+        await asyncio.wait([user.send(message) for user in USERS])
+
+
+async def notify_users():
+    if USERS:  # asyncio.wait doesn't accept an empty list
+        message = users_event()
+        await asyncio.wait([user.send(message) for user in USERS])
+
+
+async def register(websocket):
+    USERS.add(websocket)
+    await notify_users()
+
+
+async def unregister(websocket):
+    USERS.remove(websocket)
+    await notify_users()
+
+##FIN DEL CODIGO DE EJEMPLO
+
 
 
 
 
 #Este metodo se ejecuta cada vez que un cliente se conecta al server
 async def server(websocket, path):
-    connections.register(websocket)
+    await register(websocket)
+    await websocket.send(state_event())
     async for message in websocket:
         #Por cada mensaje que recibamos de este cliente en particular, se ejecutará este código
         try:
             # Validamos el mensaje
             msg = validMessage(message)
             operation = msg['operation']
+            data = msg['data']
             handler = HANDLERS[operation]
-            await handler(msg, websocket)
+            handler(data)
         except UTIError as e:
-            await sendErrorMessage(websocket, e)
+            await sendErrorMessage(websocket, e, -1)
 
     
 
@@ -37,11 +75,13 @@ def validMessage(message):
     logging.info(msg)
     if (not ('operation' in msg) or not(msg['operation'] in HANDLERS)):
         raise UTIError(CodeError.INVALID_OPERATION)
+    if (not ('data' in msg)):
+        raise UTIError(CodeError.INVALID_DATA)
     return msg
 
 #Metodo que envia mensaje de error a un cliente en especifico
-async def sendErrorMessage(websocket, error):
-    payload = {'state': error.code, 'message': error.message, 'operation': error.operation}
+async def sendErrorMessage(websocket, error, operation):
+    payload = {'state': error.code, 'message': error.message, 'operation': operation}
     await websocket.send(json.dumps(payload))
 
 
