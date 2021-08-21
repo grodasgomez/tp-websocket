@@ -1,22 +1,29 @@
 import json
+from subprocess import run
+from tkinter import Message
 from tkinter.constants import CENTER
 import PySimpleGUI as sg
 import websockets
 import asyncio
+import threading
 
-async def main():
+def main():
     ip_port = connect_menu()
     if ip_port == "":
         return
-
-    websocket = await conectar(ip_port)
     window = conectar_hostpital()
+
+    listener_thread = threading.Thread(target=process_incoming, args=(ip_port,))
+    global running
+    running = True
+    listener_thread.start()
 
     #conectar
     while True: #Event Loop
-        window, event, values = sg.read_all_windows()
+        window, event, values = sg.read_all_windows(timeout=100)
         if event == sg.WIN_CLOSED or event == 'Salir':
-            await websocket.close()
+            running = False
+            listener_thread.join()
             window.close()
             break
 
@@ -33,8 +40,6 @@ async def main():
             desocupar_cama(values["-ID-"])
 
 def conectar_hostpital():
-    #TODO conectar
-
     layout = [
         [sg.Button('Ver Estado', size=(30,1))],
         [sg.Button('Agregar Cama', size=(30,1))],
@@ -61,6 +66,20 @@ def connect_menu():
             window.close()
             return values["-IP_PORT-"]
 
+def process_incoming(ip_port):
+    asyncio.run(listener(ip_port))
+async def listener(ip_port):
+    websocket = await conectar(ip_port)
+    print(running)
+    while running:
+        try:
+            message = await asyncio.wait_for(websocket.recv(), timeout=1)
+            print(message)
+        except:
+            pass
+    await websocket.close()
+    
+
 
 def ver_estado():
     print("Ver estado")
@@ -86,4 +105,4 @@ async def conectar(ip_port):
         print("Connection error")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
