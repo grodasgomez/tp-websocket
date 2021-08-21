@@ -5,29 +5,20 @@ import websockets
 import asyncio
 
 async def main():
-    windows = {
-        "main": crear_ventana_principal()
-    }
+    ip_port = connect_menu()
+    if ip_port == "":
+        return
 
+    websocket = await conectar(ip_port)
+    window = conectar_hostpital()
+
+    #conectar
     while True: #Event Loop
         window, event, values = sg.read_all_windows()
         if event == sg.WIN_CLOSED or event == 'Salir':
+            await websocket.close()
             window.close()
-            windows.pop(window.name)
-            if len(windows) == 0:
-                break
-        
-        #Eventos de seleccionar
-        elif event == 'Conectar':
-            if not values["-NOMBRE_HOSPITAL-"]:
-                sg.popup("Debe especificar el nombre del hospital")
-            elif not values["-NOMBRE_HOSPITAL-"] in windows:
-                windows[values["-NOMBRE_HOSPITAL-"]] = conectar_hostpital(values["-NOMBRE_HOSPITAL-"])
-            else:
-                sg.popup(
-                    "Ya existe una conexión abierta con este hospital!",
-                    auto_close = True,
-                    auto_close_duration = 3)
+            break
 
         #Eventos de hospital
         elif event == 'Ver Estado':
@@ -41,16 +32,7 @@ async def main():
         elif event == 'Desocupar Cama':
             desocupar_cama(values["-ID-"])
 
-
-def crear_ventana_principal():
-    layout = [
-        [sg.Text('Por favor ingresar ID del hospital a conectar:')],
-        [sg.Input(key='-NOMBRE_HOSPITAL-')],
-        [sg.Button('Conectar'), sg.Button('Salir')]]
-    window = sg.Window('Window Title', layout, location=(800,600), finalize=True)
-    window.name = 'main'
-
-def conectar_hostpital(nombre_hospital):
+def conectar_hostpital():
     #TODO conectar
 
     layout = [
@@ -62,8 +44,23 @@ def conectar_hostpital(nombre_hospital):
         [sg.Button('Desocupar Cama', size=(30,1))],
         [sg.Text()],
         [sg.Button('Salir', size=(30,1))]]
-    window = sg.Window(nombre_hospital, layout, finalize=True)
-    window.name = nombre_hospital
+    window = sg.Window("TCP Hostpital Cliente", layout, finalize=True)
+
+def connect_menu():
+    layout = [
+        [sg.Text("Conectar a:")],
+        [sg.InputText("127.0.0.1:6789", k="-IP_PORT-")],
+        [sg.Button('Conectar', size=(30,1))]        ]
+    window = sg.Window("TCP Hostpital Cliente", layout, finalize=True)
+    while True: #Event Loop
+        window, event, values = sg.read_all_windows()
+        if event == sg.WIN_CLOSED:
+            window.close()
+            return ""
+        elif event == "Conectar":
+            window.close()
+            return values["-IP_PORT-"]
+
 
 def ver_estado():
     print("Ver estado")
@@ -80,17 +77,13 @@ def ocupar_cama(id):
 def desocupar_cama(id):
     print("Desocupar cama", id)
 
-async def hello():
-    uri = "ws://127.0.0.1:6789/"
-    async with websockets.connect(uri) as websocket:
-        await websocket.send(json.dumps({"operation": 1}, separators=(',', ':')))
-        response = await websocket.recv()
-        print(response)
-        response = await websocket.recv()
-        print(response)
-        response = await websocket.recv()
-        print(response)
-
+async def conectar(ip_port):
+    try:
+        uri = f"ws://{ip_port}/"
+        websocket = await websockets.connect(uri)
+        return websocket
+    except ConnectionRefusedError:
+        print("Connection error")
 
 if __name__ == "__main__":
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())
