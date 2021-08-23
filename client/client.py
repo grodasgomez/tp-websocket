@@ -112,7 +112,7 @@ async def listener(ip_port, window):
                         if bed["id"] == message["data"]:
                             bed["state"] = False
                 
-
+                bedList.sort(key=lambda bed: bed["hospitalId"])
                 window.close()
                 window = conectar_hostpital(bedList)
 
