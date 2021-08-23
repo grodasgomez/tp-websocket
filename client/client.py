@@ -1,6 +1,5 @@
 import json
-from subprocess import run
-from tkinter import Message
+import queue
 from tkinter.constants import CENTER
 import PySimpleGUI as sg
 import websockets
@@ -15,6 +14,8 @@ def main():
 
     listener_thread = threading.Thread(target=process_incoming, args=(ip_port,))
     global running
+    global server_messages
+    server_messages = queue.Queue()
     running = True
     listener_thread.start()
 
@@ -65,6 +66,10 @@ def connect_menu():
         elif event == "Conectar":
             window.close()
             return values["-IP_PORT-"]
+        
+        while server_messages.qsize() != 0:
+            message = server_messages.get()
+            print(message)
 
 def process_incoming(ip_port):
     asyncio.run(listener(ip_port))
@@ -74,8 +79,8 @@ async def listener(ip_port):
     while running:
         try:
             message = await asyncio.wait_for(websocket.recv(), timeout=1)
-            print(message)
-        except:
+            server_messages.put(message)
+        except asyncio.exceptions.TimeoutError:
             pass
     await websocket.close()
     
