@@ -10,3 +10,4 @@ class CodeError(Enum):
   DELETE_OCCUPIED_BED_ERROR = {'code': 4, 'message': 'La cama a eliminar se encuentra ocupada'}
   ALREADY_OCCUPIED_BED_ERROR = {'code': 5, 'message': 'La cama ya se encuentra ocupada'}
   ALREADY_UNOCCUPIED_BED_ERROR = {'code': 6, 'message': 'La cama ya se encuentra ocupada'}
+  INVALID_DATA= {'code': 7, 'message': 'Datos inválidos'}

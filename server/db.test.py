@@ -51,7 +51,7 @@ def testOccupate():
     print('TESTING occupateBed')
     print('should throw INVALID_BED_ID')
     try:
-        occupateBed(1)
+        occupyBed(1)
         raise AssertionError("Didn't throw any error")
     except UTIError as e:
         assert e.code == CodeError.INVALID_BED_ID.value['code'], "Didn't return INVALID_BED_ID"
@@ -60,13 +60,13 @@ def testOccupate():
     try:
         x = addBed(1)
         x.state = True
-        occupateBed(x.id)
+        occupyBed(x.id)
         raise AssertionError("Didn't throw any error")
     except UTIError as e:
         assert e.code == CodeError.ALREADY_OCCUPIED_BED_ERROR.value['code'], "Didn't return ALREADY_OCCUPIED_BED_ERROR"
     x.state = False
     print('should occupate the bed')
-    occupateBed(x.id)
+    occupyBed(x.id)
     assert x.state == True, "Didn't occupate the bed"
     print()
 
@@ -75,7 +75,7 @@ def testUnoccupate():
     print('TESTING unoccupateBed')
     print('should throw INVALID_BED_ID')
     try:
-        unoccupateBed(1)
+        unoccupyBed(1)
         raise AssertionError("Didn't throw any error")
     except UTIError as e:
         assert e.code == CodeError.INVALID_BED_ID.value['code'], "Didn't return INVALID_BED_ID"
@@ -83,13 +83,13 @@ def testUnoccupate():
     print('should throw ALREADY_UNOCCUPIED_BED_ERROR')
     try:
         x = addBed(1)
-        unoccupateBed(x.id)
+        unoccupyBed(x.id)
         raise AssertionError("Didn't throw any error")
     except UTIError as e:
         assert e.code == CodeError.ALREADY_UNOCCUPIED_BED_ERROR.value['code'], "Didn't return ALREADY_UNOCCUPIED_BED_ERROR"
     x.state = True
     print('should unoccupate the bed')
-    unoccupateBed(x.id)
+    unoccupyBed(x.id)
     assert x.state == False, "Didn't unoccupate the bed"
     print()
 
