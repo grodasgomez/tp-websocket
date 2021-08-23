@@ -9,9 +9,10 @@ async def main():
     ip_port = connect_menu()
     if ip_port == "":
         return
-    window = conectar_hostpital()
 
-    await listener(ip_port)
+    window = conectar_hostpital([])
+
+    await listener(ip_port, window)
 
 async def gui_producer():
     window, event, values = sg.read_all_windows(timeout=100)
@@ -20,7 +21,7 @@ async def gui_producer():
         return "close"
 
     #Eventos de hospital
-    elif event == 'Ver Estado':
+    elif event == '_BTN-VER-ESTADO_':
         return json.dumps({"operation": 1})
     elif event == 'Agregar Cama':  
         agregar_cama()
@@ -31,17 +32,12 @@ async def gui_producer():
     elif event == 'Desocupar Cama':
         desocupar_cama(values["-ID-"])
 
-def conectar_hostpital():
+def conectar_hostpital(data):
     layout = [
-        [sg.Button('Ver Estado', size=(30,1))],
-        [sg.Button('Agregar Cama', size=(30,1))],
-        [sg.Text('Modificar cama con ID: ', justification=CENTER, size=(20,1)), sg.Input(key='-ID-', size=(11,1))],
-        [sg.Button('Eliminar Cama', size=(30,1))],
-        [sg.Button('Ocupar Cama', size=(30,1))],
-        [sg.Button('Desocupar Cama', size=(30,1))],
-        [sg.Text()],
-        [sg.Button('Salir', size=(30,1))]]
-    window = sg.Window("TCP Hostpital Cliente", layout, finalize=True)
+        [sg.Button('Actualizar manualmente (ver estado)', key="_BTN-VER-ESTADO_", size=(30,1))]]
+    layout.append([[sg.Button('Salir', size=(30,1))]])
+
+    return sg.Window("TCP Hostpital Cliente", layout, finalize=True)
 
 def connect_menu():
     layout = [
@@ -59,47 +55,39 @@ def connect_menu():
             return values["-IP_PORT-"]
         
 
-async def listener(ip_port):
+async def listener(ip_port, window):
     websocket = await conectar(ip_port)
     while True:
+        # Crear dos tasks que en el mismo thread se encargan de esperar nuevos mensajes y leer gui
         listener_task = asyncio.ensure_future(websocket.recv())
         producer_task = asyncio.ensure_future(gui_producer())
+
+        # Esperar que uno de los dos termine
         done, pending = await asyncio.wait(
             [listener_task, producer_task],
             return_when = asyncio.FIRST_COMPLETED)
 
+        # Si fue un mensaje del servido que llegó
         if listener_task in done:
-            message = listener_task.result()
-            print(message)
+            message = json.loads(listener_task.result())
+            
+            window.close()
+            window = conectar_hostpital(message["data"])
         else:
             listener_task.cancel()
 
+        # Si completamos un ciclo del event loop del gui
         if producer_task in done:
             message = producer_task.result()
-            if message == "close":
+            if message == "close": # Si se quiere terminar la aplicación
                 break
-            if message:
+            elif message: # Solo hacerr algo si hubo input del usuario
                 await websocket.send(message)
         else:
             producer_task.cancel()
+
+    # Cerrar conexión
     await websocket.close()
-    
-
-
-def ver_estado():
-    print("Ver estado")
-
-def agregar_cama():
-    print("Agregar cama")
-
-def eliminar_cama(id):
-    print("Eliminar Cama", id)
-
-def ocupar_cama(id):
-    print("Ocupar cama", id)
-
-def desocupar_cama(id):
-    print("Desocupar cama", id)
 
 async def conectar(ip_port):
     try:
