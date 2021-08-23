@@ -78,6 +78,7 @@ def connect_menu():
 async def listener(ip_port, window):
     bedList = []
     websocket = await conectar(ip_port)
+    await websocket.send(json.dumps({"operation": 1}))
     while True:
         # Crear dos tasks que en el mismo thread se encargan de esperar nuevos mensajes y leer gui
         listener_task = asyncio.ensure_future(websocket.recv())
