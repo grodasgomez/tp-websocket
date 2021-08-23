@@ -16,11 +16,15 @@ def unregister(websocket):
 
 async def sendAllSuccessMessage(data, operation):
     message = _getSusccesMessage(data, operation)
+    lostConnections = []
     for user in CONNECTION_SET:
         try:
             await user.send(message)
         except:
-            unregister(user)
+            lostConnections.append(user)
+    
+    for user in lostConnections:
+        unregister(user)
             
 async def sendSuccessMessage(websocket, data, operation):
     message = _getSusccesMessage(data, operation)
