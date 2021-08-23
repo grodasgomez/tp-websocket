@@ -5,6 +5,9 @@ import websockets
 import asyncio
 import threading
 
+global hospitales_disponibles
+hospitales_disponibles = ["Hospital 1", "Hospital 2", "Hospital 3", "Hospital 4", "Hospital 5"]
+
 async def main():
     ip_port = connect_menu()
     if ip_port == "":
@@ -23,19 +26,32 @@ async def gui_producer():
     #Eventos de hospital
     elif event == '_BTN-VER-ESTADO_':
         return json.dumps({"operation": 1})
-    elif event == 'Agregar Cama':  
-        agregar_cama()
+    elif event == 'Agregar Cama':
+        id = hospitales_disponibles.index(values["_HOSPITAL-ID_"])
+        return json.dumps({"operation": 2, "data": {"hospitalId": id+1}})
     elif event == 'Eliminar Cama': 
         eliminar_cama(values["-ID-"])
-    elif event == 'Ocupar Cama': 
-        ocupar_cama(values["-ID-"])
-    elif event == 'Desocupar Cama':
-        desocupar_cama(values["-ID-"])
+    elif event != "__TIMEOUT__":
+        print(event[4:])
 
 def conectar_hostpital(data):
-    layout = [
-        [sg.Button('Actualizar manualmente (ver estado)', key="_BTN-VER-ESTADO_", size=(30,1))]]
-    layout.append([[sg.Button('Salir', size=(30,1))]])
+    layout = [[sg.Button('Actualizar manualmente (ver estado)', key="_BTN-VER-ESTADO_", size=(30,1))]]
+    col = []
+
+    for bed in data:
+        txt = f'Hospital {bed["hospitalId"]}: Cama {bed["id"]} - {"ocupado" if bed["state"] else "no ocupada"}'
+        col.append([sg.Text(txt)])
+        col.append([
+            sg.Button("Eliminar cama", k=f'_ELIM-{bed["id"]}'),
+            sg.Button("Descupar", k=f'_VCTE-{bed["id"]}') if bed["state"] else
+            sg.Button("Ocupar", k=f'_OCUP-{bed["id"]}')])
+    if len(col) > 0:
+        layout.append([sg.Column(col, scrollable=True, vertical_scroll_only=True)])
+    layout.extend([
+        [sg.Text("Hospital Id")],
+        [sg.Combo(hospitales_disponibles, k="_HOSPITAL-ID_", readonly=True)],
+        [sg.Button("Agregar Cama")]])
+    layout.append([sg.Button('Salir', size=(30,1))])
 
     return sg.Window("TCP Hostpital Cliente", layout, finalize=True)
 
@@ -56,6 +72,7 @@ def connect_menu():
         
 
 async def listener(ip_port, window):
+    bedList = []
     websocket = await conectar(ip_port)
     while True:
         # Crear dos tasks que en el mismo thread se encargan de esperar nuevos mensajes y leer gui
@@ -71,8 +88,30 @@ async def listener(ip_port, window):
         if listener_task in done:
             message = json.loads(listener_task.result())
             
-            window.close()
-            window = conectar_hostpital(message["data"])
+            if message["state"] != 0:
+                showError(message)
+            else:
+                operation = message["operation"]
+
+                if operation == 1:
+                    bedList = message["data"]
+                elif operation == 2:
+                    bedList.append(message["data"])
+                elif operation == 3:
+                    bedList = [bed for bed in bedList if bed["id"] != message["data"]["id"]]
+                elif operation == 4:
+                    for bed in bedList:
+                        if bed["id"] == message["data"]["id"]:
+                            bed["state"] = True
+                elif operation == 5:
+                    for bed in bedList:
+                        if bed["id"] == message["data"]["id"]:
+                            bed["state"] = False
+                
+
+                window.close()
+                window = conectar_hostpital(bedList)
+
         else:
             listener_task.cancel()
 
@@ -81,7 +120,7 @@ async def listener(ip_port, window):
             message = producer_task.result()
             if message == "close": # Si se quiere terminar la aplicación
                 break
-            elif message: # Solo hacerr algo si hubo input del usuario
+            elif message: # Solo hacer algo si hubo input del usuario
                 await websocket.send(message)
         else:
             producer_task.cancel()
@@ -96,6 +135,10 @@ async def conectar(ip_port):
         return websocket
     except ConnectionRefusedError:
         print("Connection error")
+
+def showError(message):
+    sg.popup_error(message)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
