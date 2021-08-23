@@ -9,13 +9,14 @@ global hospitales_disponibles
 hospitales_disponibles = ["Hospital 1", "Hospital 2", "Hospital 3", "Hospital 4", "Hospital 5"]
 
 async def main():
-    ip_port = connect_menu()
-    if ip_port == "":
-        return
+    while True: # Volver a mostrar menu de conectar al salir
+        ip_port = connect_menu()
+        if ip_port == "":
+            return
 
-    window = conectar_hostpital([])
+        window = conectar_hostpital([])
 
-    await listener(ip_port, window)
+        await listener(ip_port, window)
 
 async def gui_producer():
     window, event, values = sg.read_all_windows(timeout=100)
@@ -84,6 +85,7 @@ def connect_menu():
 async def listener(ip_port, window):
     bedList = []
     websocket = await conectar(ip_port)
+    await websocket.send(json.dumps({"operation": 1}))
     while True:
         # Crear dos tasks que en el mismo thread se encargan de esperar nuevos mensajes y leer gui
         listener_task = asyncio.ensure_future(websocket.recv())
