@@ -9,13 +9,14 @@ global hospitales_disponibles
 hospitales_disponibles = ["Hospital 1", "Hospital 2", "Hospital 3", "Hospital 4", "Hospital 5"]
 
 async def main():
-    ip_port = connect_menu()
-    if ip_port == "":
-        return
+    while True: # Volver a mostrar menu de conectar al salir
+        ip_port = connect_menu()
+        if ip_port == "":
+            return
 
-    window = conectar_hostpital([])
+        window = conectar_hostpital([])
 
-    await listener(ip_port, window)
+        await listener(ip_port, window)
 
 async def gui_producer():
     window, event, values = sg.read_all_windows(timeout=100)
