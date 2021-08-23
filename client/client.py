@@ -27,19 +27,23 @@ async def gui_producer():
     elif event == '_BTN-VER-ESTADO_':
         return json.dumps({"operation": 1})
     elif event == 'Agregar Cama':
-        id = hospitales_disponibles.index(values["_HOSPITAL-ID_"])
-        return json.dumps({"operation": 2, "data": {"hospitalId": id+1}})
-    elif event == 'Eliminar Cama': 
-        eliminar_cama(values["-ID-"])
+        try:
+            id = hospitales_disponibles.index(values["_HOSPITAL-ID_"])
+            return json.dumps({"operation": 2, "data": {"hospitalId": id+1}})
+        except ValueError:
+            pass
     elif event != "__TIMEOUT__":
-        print(event[4:])
+        operations = {"_ELIM-": 3, "_OCUP-": 4, "_VCTE-": 5}
+        return json.dumps({"operation": operations[event[:6]], "data": {
+            "bedId": event[6:]
+        }})
 
 def conectar_hostpital(data):
     layout = [[sg.Button('Actualizar manualmente (ver estado)', key="_BTN-VER-ESTADO_", size=(30,1))]]
     col = []
 
     for bed in data:
-        txt = f'Hospital {bed["hospitalId"]}: Cama {bed["id"]} - {"ocupado" if bed["state"] else "no ocupada"}'
+        txt = f'Hospital {bed["hospitalId"]}: Cama {bed["id"]} - {"ocupada" if bed["state"] else "no ocupada"}'
         col.append([sg.Text(txt)])
         col.append([
             sg.Button("Eliminar cama", k=f'_ELIM-{bed["id"]}'),
@@ -101,11 +105,11 @@ async def listener(ip_port, window):
                     bedList = [bed for bed in bedList if bed["id"] != message["data"]["id"]]
                 elif operation == 4:
                     for bed in bedList:
-                        if bed["id"] == message["data"]["id"]:
+                        if bed["id"] == message["data"]:
                             bed["state"] = True
                 elif operation == 5:
                     for bed in bedList:
-                        if bed["id"] == message["data"]["id"]:
+                        if bed["id"] == message["data"]:
                             bed["state"] = False
                 
 
