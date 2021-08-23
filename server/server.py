@@ -46,7 +46,7 @@ async def sendErrorMessage(websocket, error):
 
 
 #Metodos que levantan el websocket
-start_server = websockets.serve(server, "localhost", 6789)
+start_server = websockets.serve(server, "localhost", 6789, ping_interval=None)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
