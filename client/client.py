@@ -23,8 +23,9 @@ async def gui_producer():
     #Eventos de hospital
     elif event == '_BTN-VER-ESTADO_':
         return json.dumps({"operation": 1})
-    elif event == 'Agregar Cama':  
-        agregar_cama()
+    elif event == 'Agregar Cama':
+        id = values["_HOSPITAL-ID_"]
+        return json.dumps({"operation": 2, "data": {"hospitalId": id}})
     elif event == 'Eliminar Cama': 
         eliminar_cama(values["-ID-"])
     elif event == 'Ocupar Cama': 
@@ -33,9 +34,18 @@ async def gui_producer():
         desocupar_cama(values["-ID-"])
 
 def conectar_hostpital(data):
-    layout = [
-        [sg.Button('Actualizar manualmente (ver estado)', key="_BTN-VER-ESTADO_", size=(30,1))]]
-    layout.append([[sg.Button('Salir', size=(30,1))]])
+    layout = [[sg.Button('Actualizar manualmente (ver estado)', key="_BTN-VER-ESTADO_", size=(30,1))]]
+
+    for bed in data:
+        txt = f'Hospital {bed["hospitalId"]}: Cama {bed["id"]} - {"ocupado" if bed["state"] else "no ocupada"}'
+        layout.append([sg.Text(txt)])
+
+    layout.extend([
+        [],
+        [sg.Text("Hospital Id")],
+        [sg.InputText(k="_HOSPITAL-ID_")],
+        [sg.Button("Agregar Cama")]])
+    layout.append([sg.Button('Salir', size=(30,1))])
 
     return sg.Window("TCP Hostpital Cliente", layout, finalize=True)
 
@@ -56,6 +66,7 @@ def connect_menu():
         
 
 async def listener(ip_port, window):
+    bedList = []
     websocket = await conectar(ip_port)
     while True:
         # Crear dos tasks que en el mismo thread se encargan de esperar nuevos mensajes y leer gui
@@ -71,8 +82,30 @@ async def listener(ip_port, window):
         if listener_task in done:
             message = json.loads(listener_task.result())
             
-            window.close()
-            window = conectar_hostpital(message["data"])
+            if message["state"] != 0:
+                showError(message)
+            else:
+                operation = message["operation"]
+
+                if operation == 1:
+                    bedList = message["data"]
+                elif operation == 2:
+                    bedList.append(message["data"])
+                elif operation == 3:
+                    bedList = [bed for bed in bedList if bed["id"] != message["data"]["id"]]
+                elif operation == 4:
+                    for bed in bedList:
+                        if bed["id"] == message["data"]["id"]:
+                            bed["state"] = True
+                elif operation == 5:
+                    for bed in bedList:
+                        if bed["id"] == message["data"]["id"]:
+                            bed["state"] = False
+                
+
+                window.close()
+                window = conectar_hostpital(bedList)
+
         else:
             listener_task.cancel()
 
@@ -81,7 +114,7 @@ async def listener(ip_port, window):
             message = producer_task.result()
             if message == "close": # Si se quiere terminar la aplicación
                 break
-            elif message: # Solo hacerr algo si hubo input del usuario
+            elif message: # Solo hacer algo si hubo input del usuario
                 await websocket.send(message)
         else:
             producer_task.cancel()
@@ -96,6 +129,10 @@ async def conectar(ip_port):
         return websocket
     except ConnectionRefusedError:
         print("Connection error")
+
+def showError(message):
+    sg.popup_error(message)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
