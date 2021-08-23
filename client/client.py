@@ -108,7 +108,7 @@ async def listener(ip_port, window):
                 elif operation == 2:
                     bedList.append(message["data"])
                 elif operation == 3:
-                    bedList = [bed for bed in bedList if bed["id"] != message["data"]["id"]]
+                    bedList = [bed for bed in bedList if bed["id"] != message["data"]]
                 elif operation == 4:
                     for bed in bedList:
                         if bed["id"] == message["data"]:
