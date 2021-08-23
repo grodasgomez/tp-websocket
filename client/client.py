@@ -13,9 +13,9 @@ def main():
     window = conectar_hostpital()
 
     listener_thread = threading.Thread(target=process_incoming, args=(ip_port,))
-    global running
-    global server_messages
-    server_messages = queue.Queue()
+    global running, recv_messages, send_messages
+    recv_messages = queue.Queue()
+    send_messages = queue.Queue()
     running = True
     listener_thread.start()
 
@@ -30,7 +30,7 @@ def main():
 
         #Eventos de hospital
         elif event == 'Ver Estado':
-            ver_estado()
+            send_messages.put(json.dumps())
         elif event == 'Agregar Cama':  
             agregar_cama()
         elif event == 'Eliminar Cama': 
@@ -67,8 +67,8 @@ def connect_menu():
             window.close()
             return values["-IP_PORT-"]
         
-        while server_messages.qsize() != 0:
-            message = server_messages.get()
+        while recv_messages.qsize() != 0:
+            message = recv_messages.get()
             print(message)
 
 def process_incoming(ip_port):
@@ -79,9 +79,15 @@ async def listener(ip_port):
     while running:
         try:
             message = await asyncio.wait_for(websocket.recv(), timeout=1)
-            server_messages.put(message)
+            recv_messages.put(message)
         except asyncio.exceptions.TimeoutError:
             pass
+        
+        while send_messages.qsize() > 0:
+            try:
+                await websocket.send(send_messages.get())
+            except asyncio.exceptions.TimeoutError:
+                print("Error enviando mensaje!")
     await websocket.close()
     
 
