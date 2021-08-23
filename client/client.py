@@ -42,10 +42,16 @@ def conectar_hostpital(data):
     layout = [[sg.Button('Actualizar manualmente (ver estado)', key="_BTN-VER-ESTADO_", size=(30,1))]]
     col = []
 
+    lastHospitalId = ""
     for bed in data:
-        txt = f'Hospital {bed["hospitalId"]}: Cama {bed["id"]} - {"ocupada" if bed["state"] else "no ocupada"}'
-        col.append([sg.Text(txt)])
-        col.append([
+        if lastHospitalId != bed["hospitalId"]:
+            lastHospitalId = bed["hospitalId"]
+            bedCounter = 1
+        else:
+            bedCounter += 1
+        
+        txt = f'Hospital {bed["hospitalId"]}: Cama {bedCounter} - {"ocupada" if bed["state"] else "no ocupada"}'
+        col.append([sg.Text(txt),
             sg.Button("Eliminar cama", k=f'_ELIM-{bed["id"]}'),
             sg.Button("Descupar", k=f'_VCTE-{bed["id"]}') if bed["state"] else
             sg.Button("Ocupar", k=f'_OCUP-{bed["id"]}')])
