@@ -1,7 +1,7 @@
 # Como instalar Cliente
 Primeramente se debe tener python3, si no esta instalado usar:
 
-    sudo apt install python 3.6
+    sudo apt install python 3.8
 
 Para las interfaces gráficas se usa PySimpleGui. Para instalar PySimpleGui se debe instalar pip para python3 o pip3:
 
@@ -18,7 +18,7 @@ Eventiualmente podría ser que se requiere instalar además python3-tk, usando e
 
 
 # Ejecutar cliente
-Para ejecutar el cliente se usa el comando `python3 client.py` desde el directorio donde esta ubicado el archivo "client.py".
+Para ejecutar el cliente se usa el comando `python3.8 client.py` desde el directorio donde esta ubicado el archivo "client.py".
 
 # Investigación sobre Websockets
 Link para acceder al documento:
