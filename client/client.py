@@ -4,24 +4,36 @@ import websockets
 import asyncio
 
 hospitales = ["Hospital 1", "Hospital 2", "Hospital 3", "Hospital 4", "Hospital 5"]
+posicionWindow = tuple()
 
 
 async def main():
     # Loop principal del programa
     while True:
-        ipPort = connectMenu()
+        ipPort = pantMenu()
         if ipPort == "":
-            return
-        # Se establecion conexion con el servidor
-        window = conectarHostpital([])
-        await listener(ipPort, window)
+            continue
+        try:
+            # Se establece conexion con el servidor
+            websocket, bedList = await conectar(ipPort)
+            window = pantHospital(bedList)
+            msg = await listener(websocket, window, bedList)
+            # Cerrar conexión
+            await websocket.close()
+            if msg == "SALIR":
+                break
+        except ConnectionRefusedError:
+            print("Connection error")
 
 
 async def guiProducer():
     window, event, values = GUI.read_all_windows(timeout=100)
-    if event == GUI.WIN_CLOSED or event == "Salir":
+    if event == GUI.WIN_CLOSED:
         window.close()
-        return "close"
+        return "SALIR"
+    elif event == "Desconectar":
+        actualizarPant(window)
+        return "DESCONECTAR"
     # Eventos de hospital
     elif event == "_BTN-VER-ESTADO_":
         return json.dumps({"operation": 1})
@@ -36,7 +48,7 @@ async def guiProducer():
         return json.dumps({"operation": operations[event[:6]], "data": {"bedId": event[6:]}})
 
 
-def conectarHostpital(data):
+def pantHospital(data):
     layout = [[GUI.Button("Actualizar manualmente (ver estado)", key="_BTN-VER-ESTADO_", size=(30, 1))]]
     listaCamas = []
     lastHospitalId = ""
@@ -58,47 +70,55 @@ def conectarHostpital(data):
             else:
                 aux.append(GUI.Button("Ocupar", k=f'_OCUP-{bed["id"]}'))
             listaCamas.append(aux)
-        layout.append([GUI.Column(listaCamas, scrollable=True, vertical_scroll_only=True, s=(380, 100))])
+        layout.append([GUI.Column(listaCamas, scrollable=True, vertical_scroll_only=True, s=(450, 300))])
     # Se termina y retorna la interfaz
     text = GUI.Text("Hospital Id")
     combo = GUI.Combo(hospitales, k="_HOSPITAL-ID_", readonly=True)
     boton = GUI.Button("Agregar Cama")
     layout.extend([[text], [combo], [boton]])
-    layout.append([GUI.Button("Salir", size=(30, 1))])
-    return GUI.Window("TCP Hostpital Cliente", layout, finalize=True)
+    layout.append([GUI.Button("Desconectar", size=(30, 1))])
+    global posicionWindow
+    return GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
 
 
-def connectMenu():
+def pantMenu():
     layout = [
         [GUI.Text("Conectar a:")],
         [GUI.InputText("127.0.0.1:6789", k="-IP_PORT-")],
         [GUI.Button("Conectar", size=(30, 1))],
     ]
-    window = GUI.Window("TCP Hostpital Cliente", layout, finalize=True)
+    global posicionWindow
+    if posicionWindow:
+        window = GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
+    else:
+        window = GUI.Window("TCP Hospital Cliente", layout, finalize=True)
     # Loop de eventos de la pantalla menu
     while True:
         window, event, values = GUI.read_all_windows()
         if event == GUI.WIN_CLOSED:
             window.close()
-            return ""
+            return "exit"
         elif event == "Conectar":
-            window.close()
+            actualizarPant(window)
             return values["-IP_PORT-"]
 
 
-async def listener(ip_port, window):
-    bedList = []
-    websocket = await conectar(ip_port)
-    await websocket.send(json.dumps({"operation": 1}))
+def actualizarPant(window):
+    global posicionWindow
+    posicionWindow = window.CurrentLocation()
+    window.close()
+
+
+async def listener(websocket, window, bedList):
     while True:
         # Crear dos tasks que en el mismo thread se encargan de esperar nuevos mensajes y leer gui
         listener_task = asyncio.ensure_future(websocket.recv())
         producer_task = asyncio.ensure_future(guiProducer())
 
         # Esperar que uno de los dos termine
-        done, pending = await asyncio.wait([listener_task, producer_task], return_when=asyncio.FIRST_COMPLETED)
+        done, _ = await asyncio.wait([listener_task, producer_task], return_when=asyncio.FIRST_COMPLETED)
 
-        # Si fue un mensaje del servido que llegó
+        # Si fue un mensaje del servidor que llegó
         if listener_task in done:
             message = json.loads(listener_task.result())
             if message["state"] != 0:
@@ -120,30 +140,30 @@ async def listener(ip_port, window):
                         if bed["id"] == message["data"]:
                             bed["state"] = False
                 bedList.sort(key=lambda bed: bed["hospitalId"])
-                window.close()
-                window = conectarHostpital(bedList)
+                actualizarPant(window)
+                window = pantHospital(bedList)
         else:
             listener_task.cancel()
         # Si completamos un ciclo del event loop del gui
         if producer_task in done:
             message = producer_task.result()
-            if message == "close":  # Si se quiere terminar la aplicación
-                break
+            if message == "DESCONECTAR" or message == "SALIR":  # Si se quiere terminar la aplicación
+                return message
             elif message:  # Solo hacer algo si hubo input del usuario
                 await websocket.send(message)
         else:
             producer_task.cancel()
-    # Cerrar conexión
-    await websocket.close()
 
 
 async def conectar(ipPort):
-    try:
-        uri = f"ws://{ipPort}/"
-        websocket = await websockets.connect(uri, ping_interval=None)
-        return websocket
-    except ConnectionRefusedError:
-        print("Connection error")
+    uri = f"ws://{ipPort}/"
+    # Al conectarse ya se solicita los datos al servidor
+    websocket = await websockets.connect(uri, ping_interval=None)
+    await websocket.send(json.dumps({"operation": 1}))
+    msg = await websocket.recv()
+    bedList = json.loads(msg)["data"]
+    bedList.sort(key=lambda bed: bed["hospitalId"])
+    return websocket, bedList
 
 
 def showError(message):
