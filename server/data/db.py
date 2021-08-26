@@ -31,6 +31,7 @@ def addBed(hospitalId: int):
 
 def deleteBed(id: str):
     existsBed(id, 3)
+    isOccupied(id,3)
     return BED_LIST.pop(id)
 
 # Marca como ocupada una cama dado su id
@@ -62,3 +63,8 @@ def existsBed(id: str, operation:int):
     existsBed = id in BED_LIST
     if(not existsBed):
         raise UTIError(CodeError.INVALID_BED_ID, operation)
+
+# Verifica si la cama esta ocupada
+def isOccupied(id : str, operation:int):
+    if (BED_LIST[id].state):
+        raise UTIError(CodeError.DELETE_OCCUPIED_BED_ERROR, operation)
