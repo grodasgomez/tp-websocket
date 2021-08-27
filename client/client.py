@@ -64,7 +64,7 @@ def pantHospital(data):
               [GUI.Text("Filtro"),GUI.Combo(hospitales,k="_HOSPITAL-ID_FIL",readonly=True),GUI.Button("Filtrar"),GUI.Button("desfiltrar")]
     ]
     
-    listaCamas = deployData(data,layout)
+    deployData(data,layout)
 
 
     # Se termina y retorna la interfaz
@@ -105,8 +105,6 @@ def deployData(data,layout):
                 aux.append(GUI.Button("Ocupar", k=f'_OCUP-{bed["id"]}'))
             listaCamas.append(aux)
         layout.append([GUI.Column(listaCamas, scrollable=True, vertical_scroll_only=True)])
-        
-    return listaCamas
 
 
 def pantMenu():
