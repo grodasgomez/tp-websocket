@@ -70,7 +70,7 @@ def pantHospital(data):
             else:
                 aux.append(GUI.Button("Ocupar", k=f'_OCUP-{bed["id"]}'))
             listaCamas.append(aux)
-        layout.append([GUI.Column(listaCamas, scrollable=True, vertical_scroll_only=True)])
+        layout.append([GUI.Column(listaCamas, scrollable=True, vertical_scroll_only=True, expand_y=True)])
     # Se termina y retorna la interfaz
     text = GUI.Text("Hospital Id")
     combo = GUI.Combo(hospitales, k="_HOSPITAL-ID_", readonly=True)
