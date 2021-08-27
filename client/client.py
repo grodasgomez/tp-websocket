@@ -13,6 +13,8 @@ async def main():
         ipPort = pantMenu()
         if ipPort == "":
             continue
+        elif ipPort == "exit":
+            return
         try:
             # Se establece conexion con el servidor
             websocket, bedList = await conectar(ipPort)
@@ -78,7 +80,13 @@ def pantHospital(data):
     layout.extend([[text], [combo], [boton]])
     layout.append([GUI.Button("Desconectar", size=(30, 1))])
     global posicionWindow
-    return GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
+    window = GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
+
+    # Hacky linux shit, shouldn't do anything in windows
+    nuevaPosicion = window.CurrentLocation()
+    window.move(2*posicionWindow[0]-nuevaPosicion[0], 2*posicionWindow[1]-nuevaPosicion[1])
+
+    return window
 
 
 def pantMenu():
