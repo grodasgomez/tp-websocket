@@ -78,7 +78,11 @@ def pantHospital(data):
     layout.extend([[text], [combo], [boton]])
     layout.append([GUI.Button("Desconectar", size=(30, 1))])
     global posicionWindow
-    return GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
+    # Se coloca un tamanho default hasta que necesite expandirse
+    if (len(listaCamas) == 0 or (len(listaCamas) > 8)):
+        return GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
+    else:
+        return GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow, size=(415, 300))
 
 
 def pantMenu():
