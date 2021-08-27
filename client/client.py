@@ -13,6 +13,8 @@ async def main():
         ipPort = pantMenu()
         if ipPort == "":
             continue
+        elif ipPort == "exit":
+            return
         try:
             # Se establece conexion con el servidor
             websocket, bedList = await conectar(ipPort)
