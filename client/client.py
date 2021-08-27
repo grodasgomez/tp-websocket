@@ -47,7 +47,7 @@ async def guiProducer():
     elif event == "Filtrar":
         try:
             id = hospitales.index(values["_HOSPITAL-ID_FIL"])
-            return json.dumps({"idHospital":id+1})
+            return json.dumps({"operation":"filter","hospitalId":id+1})
         except ValueError:
             pass
     elif event == "desfiltrar":
@@ -175,11 +175,11 @@ async def listener(websocket, window, bedList):
                 actualizarPant(window)
                 window = pantHospital(auxBedList)     
             elif message:  # Solo hacer algo si hubo input del usuario
-                if 'idHospital' in message:
+                if 'filter' in message:
                     message = json.loads(message)
                     auxBedList = []
                     for bed in bedList:
-                        if bed['hospitalId']==message['idHospital']:
+                        if bed['hospitalId']==message['hospitalId']:
                             auxBedList.append(bed)
                 
                     actualizarPant(window)
