@@ -45,8 +45,11 @@ async def guiProducer():
         except ValueError:
             pass
     elif event == "Filtrar":
-        id = hospitales.index(values["_HOSPITAL-ID_FIL"])
-        return json.dumps({"idHospital":id+1})
+        try:
+            id = hospitales.index(values["_HOSPITAL-ID_FIL"])
+            return json.dumps({"idHospital":id+1})
+        except ValueError:
+            pass
     elif event == "desfiltrar":
         return "DESFILTRAR"
     elif event != "__TIMEOUT__":
