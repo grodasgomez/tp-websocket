@@ -70,7 +70,7 @@ def pantHospital(data):
             else:
                 aux.append(GUI.Button("Ocupar", k=f'_OCUP-{bed["id"]}'))
             listaCamas.append(aux)
-        layout.append([GUI.Column(listaCamas, scrollable=True, vertical_scroll_only=True, expand_y=True)])
+        layout.append([GUI.Column(listaCamas, scrollable=True, vertical_scroll_only=True)])
     # Se termina y retorna la interfaz
     text = GUI.Text("Hospital Id")
     combo = GUI.Combo(hospitales, k="_HOSPITAL-ID_", readonly=True)
@@ -78,11 +78,7 @@ def pantHospital(data):
     layout.extend([[text], [combo], [boton]])
     layout.append([GUI.Button("Desconectar", size=(30, 1))])
     global posicionWindow
-    # Se coloca un tamanho default hasta que necesite expandirse
-    if (len(listaCamas) == 0 or (len(listaCamas) > 8)):
-        return GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
-    else:
-        return GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow, size=(415, 300))
+    return GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
 
 
 def pantMenu():
