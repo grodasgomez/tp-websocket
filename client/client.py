@@ -136,6 +136,7 @@ def actualizarPant(window):
 
 
 async def listener(websocket, window, bedList):
+    filer = ""
     auxBedList = bedList
     while True:
         # Crear dos tasks que en el mismo thread se encargan de esperar nuevos mensajes y leer gui
@@ -155,6 +156,8 @@ async def listener(websocket, window, bedList):
                 if operation == 1:
                     bedList = message["data"]
                 elif operation == 2:
+                    if (filter == "" or message["data"]['hospitalId']==filter):
+                        auxBedList.append(message["data"])
                     bedList.append(message["data"])
                 elif operation == 3:
                     bedList = [bed for bed in bedList if bed["id"] != message["data"]]
@@ -177,12 +180,14 @@ async def listener(websocket, window, bedList):
             if message == "DESCONECTAR" or message == "SALIR":  # Si se quiere terminar la aplicación
                 return message
             elif message == "DESFILTRAR":
+                filter=""
                 auxBedList=bedList
                 actualizarPant(window)
                 window = pantHospital(auxBedList)     
             elif message:  # Solo hacer algo si hubo input del usuario
                 if 'filter' in message:
                     message = json.loads(message)
+                    filter = message['hospitalId']
                     auxBedList = []
                     for bed in bedList:
                         if bed['hospitalId']==message['hospitalId']:
