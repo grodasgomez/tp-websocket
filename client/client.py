@@ -156,7 +156,7 @@ async def listener(websocket, window, bedList):
                 if operation == 1:
                     bedList = message["data"]
                 elif operation == 2:
-                    if (filtro == "" or message["data"]['hospitalId']==filtro):
+                    if (message["data"]['hospitalId']==filtro):
                         auxBedList.append(message["data"])
                     bedList.append(message["data"])
                 elif operation == 3:
