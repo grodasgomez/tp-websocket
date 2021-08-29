@@ -1,4 +1,5 @@
 import json
+from traceback import print_tb
 import PySimpleGUI as GUI
 import websockets
 import asyncio
@@ -45,13 +46,44 @@ async def guiProducer():
             return json.dumps({"operation": 2, "data": {"hospitalId": id + 1}})
         except ValueError:
             pass
+    elif event == "Filtrar":
+        try:
+            id = hospitales.index(values["_HOSPITAL-ID_FIL"])
+            return json.dumps({"operation":"filter","hospitalId":id+1})
+        except ValueError:
+            pass
+    elif event == "desfiltrar":
+        return "DESFILTRAR"
     elif event != "__TIMEOUT__":
         operations = {"_ELIM-": 3, "_OCUP-": 4, "_VCTE-": 5}
         return json.dumps({"operation": operations[event[:6]], "data": {"bedId": event[6:]}})
 
 
 def pantHospital(data):
-    layout = [[GUI.Button("Actualizar manualmente (ver estado)", key="_BTN-VER-ESTADO_", size=(30, 1))]]
+    layout = [[GUI.Button("Actualizar manualmente (ver estado)", key="_BTN-VER-ESTADO_", size=(30, 1))],
+              [GUI.Text("Filtro"),GUI.Combo(hospitales,k="_HOSPITAL-ID_FIL",readonly=True),GUI.Button("Filtrar"),GUI.Button("desfiltrar")]
+    ]
+    
+    deployData(data,layout)
+
+
+    # Se termina y retorna la interfaz
+    text = GUI.Text("Hospital Id")
+    combo = GUI.Combo(hospitales, k="_HOSPITAL-ID_", readonly=True)
+    boton = GUI.Button("Agregar Cama")
+    layout.extend([[text], [combo], [boton]])
+    layout.append([GUI.Button("Desconectar", size=(30, 1))])
+    global posicionWindow
+    window = GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
+
+    # Hacky linux shit, shouldn't do anything in windows
+    nuevaPosicion = window.CurrentLocation()
+    window.move(2*posicionWindow[0]-nuevaPosicion[0], 2*posicionWindow[1]-nuevaPosicion[1])
+
+    return window
+
+
+def deployData(data,layout):
     listaCamas = []
     lastHospitalId = ""
     # Se preparan los datos a mostrar en pantalla
@@ -73,20 +105,6 @@ def pantHospital(data):
                 aux.append(GUI.Button("Ocupar", k=f'_OCUP-{bed["id"]}'))
             listaCamas.append(aux)
         layout.append([GUI.Column(listaCamas, scrollable=True, vertical_scroll_only=True)])
-    # Se termina y retorna la interfaz
-    text = GUI.Text("Hospital Id")
-    combo = GUI.Combo(hospitales, k="_HOSPITAL-ID_", readonly=True)
-    boton = GUI.Button("Agregar Cama")
-    layout.extend([[text], [combo], [boton]])
-    layout.append([GUI.Button("Desconectar", size=(30, 1))])
-    global posicionWindow
-    window = GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
-
-    # Hacky linux shit, shouldn't do anything in windows
-    nuevaPosicion = window.CurrentLocation()
-    window.move(2*posicionWindow[0]-nuevaPosicion[0], 2*posicionWindow[1]-nuevaPosicion[1])
-
-    return window
 
 
 def pantMenu():
@@ -118,6 +136,8 @@ def actualizarPant(window):
 
 
 async def listener(websocket, window, bedList):
+    filer = ""
+    auxBedList = bedList
     while True:
         # Crear dos tasks que en el mismo thread se encargan de esperar nuevos mensajes y leer gui
         listener_task = asyncio.ensure_future(websocket.recv())
@@ -136,6 +156,8 @@ async def listener(websocket, window, bedList):
                 if operation == 1:
                     bedList = message["data"]
                 elif operation == 2:
+                    if (filter == "" or message["data"]['hospitalId']==filter):
+                        auxBedList.append(message["data"])
                     bedList.append(message["data"])
                 elif operation == 3:
                     bedList = [bed for bed in bedList if bed["id"] != message["data"]]
@@ -149,7 +171,7 @@ async def listener(websocket, window, bedList):
                             bed["state"] = False
                 bedList.sort(key=lambda bed: bed["hospitalId"])
                 actualizarPant(window)
-                window = pantHospital(bedList)
+                window = pantHospital(auxBedList)
         else:
             listener_task.cancel()
         # Si completamos un ciclo del event loop del gui
@@ -157,8 +179,24 @@ async def listener(websocket, window, bedList):
             message = producer_task.result()
             if message == "DESCONECTAR" or message == "SALIR":  # Si se quiere terminar la aplicación
                 return message
+            elif message == "DESFILTRAR":
+                filter=""
+                auxBedList=bedList
+                actualizarPant(window)
+                window = pantHospital(auxBedList)     
             elif message:  # Solo hacer algo si hubo input del usuario
-                await websocket.send(message)
+                if 'filter' in message:
+                    message = json.loads(message)
+                    filter = message['hospitalId']
+                    auxBedList = []
+                    for bed in bedList:
+                        if bed['hospitalId']==message['hospitalId']:
+                            auxBedList.append(bed)
+                
+                    actualizarPant(window)
+                    window = pantHospital(auxBedList)
+                else:
+                    await websocket.send(message)
         else:
             producer_task.cancel()
 
