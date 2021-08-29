@@ -44,6 +44,7 @@ def occupyBed(id: str):
     if(bed.state):
         raise UTIError(CodeError.ALREADY_OCCUPIED_BED_ERROR, 4)
     bed.state = True
+    return bed;
 
 # Marca como desocupada una cama dado su id
 # Lanza un error si no existe la cama, o si ya esta desocupada
@@ -55,6 +56,7 @@ def unoccupyBed(id: str):
     if(not bed.state):
         raise UTIError(CodeError.ALREADY_UNOCCUPIED_BED_ERROR, 5)
     bed.state = False
+    return bed
 
 # Verifica si existe una cama, si no existe lanza un UTIError
 
