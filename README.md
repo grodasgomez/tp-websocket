@@ -33,7 +33,7 @@ Link para acceder al documento:
 # Documentación API
 Link para documentación del API:
 
-    https://drive.google.com/file/d/14j0yxI3h8mxYH-H6AieonSbSazo2-TAA/view?usp=sharing
+    https://docs.google.com/document/d/1GrDoun-l5_64MGAya9W4yfceuzh-BfM3YLFd8MF7jOU/export?format=pdf
 
 # Integrantes
 * Manuel René Pauls Toews
