@@ -160,6 +160,7 @@ async def listener(websocket, window, bedList):
                         auxBedList.append(message["data"])
                     bedList.append(message["data"])
                 elif operation == 3:
+                    auxBedList = [bed for bed in auxBedList if bed["id"] != message["data"]]
                     bedList = [bed for bed in bedList if bed["id"] != message["data"]]
                 elif operation == 4:
                     for bed in bedList:
