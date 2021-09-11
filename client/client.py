@@ -60,7 +60,7 @@ async def guiProducer():
 
 
 def pantHospital(data):
-    layout = [[GUI.Button("Actualizar manualmente (ver estado)", key="_BTN-VER-ESTADO_", size=(30, 1))],
+    layout = [[GUI.Button("Forzar actualizacion de datos", key="_BTN-VER-ESTADO_", size=(30, 1))],
               [GUI.Text("Filtro"),GUI.Combo(hospitales,k="_HOSPITAL-ID_FIL",readonly=True),GUI.Button("Filtrar"),GUI.Button("desfiltrar")]
     ]
     
