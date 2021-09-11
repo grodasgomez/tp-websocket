@@ -40,7 +40,7 @@ async def guiProducer():
     # Eventos de hospital
     elif event == "_BTN-VER-ESTADO_":
         return json.dumps({"operation": 1})
-    elif event == "Agregar Cama":
+    elif event == "Añadir Cama":
         try:
             id = hospitales.index(values["_HOSPITAL-ID_"])
             return json.dumps({"operation": 2, "data": {"hospitalId": id + 1}})
