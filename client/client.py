@@ -115,9 +115,9 @@ def pantMenu():
     ]
     global posicionWindow
     if posicionWindow:
-        window = GUI.Window("TCP Hospital Cliente", layout, finalize=True, location=posicionWindow)
+        window = GUI.Window("Cliente TCP", layout, finalize=True, location=posicionWindow)
     else:
-        window = GUI.Window("TCP Hospital Cliente", layout, finalize=True)
+        window = GUI.Window("Cliente TCP", layout, finalize=True)
     # Loop de eventos de la pantalla menu
     while True:
         window, event, values = GUI.read_all_windows()
