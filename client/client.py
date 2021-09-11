@@ -52,7 +52,7 @@ async def guiProducer():
             return json.dumps({"operation":"filter","hospitalId":id+1})
         except ValueError:
             pass
-    elif event == "desfiltrar":
+    elif event == "Filtro":
         return "DESFILTRAR"
     elif event != "__TIMEOUT__":
         operations = {"_ELIM-": 3, "_OCUP-": 4, "_VCTE-": 5}
@@ -61,7 +61,7 @@ async def guiProducer():
 
 def pantHospital(data):
     layout = [[GUI.Button("Actualizar manualmente (ver estado)", key="_BTN-VER-ESTADO_", size=(30, 1))],
-              [GUI.Text("Filtro"),GUI.Combo(hospitales,k="_HOSPITAL-ID_FIL",readonly=True),GUI.Button("Filtrar"),GUI.Button("desfiltrar")]
+              [GUI.Text("Filtro"),GUI.Combo(hospitales,k="_HOSPITAL-ID_FIL",readonly=True),GUI.Button("Filtrar"),GUI.Button("Filtro")]
     ]
     
     deployData(data,layout)
@@ -98,7 +98,7 @@ def deployData(data,layout):
             txt = f'Hospital {bed["hospitalId"]}: Cama {bedCounter} - {"ocupada" if bed["state"] else "no ocupada"}'
             aux = []
             aux.append(GUI.Text(txt))
-            aux.append(GUI.Button("Eliminar cama", k=f'_ELIM-{bed["id"]}'))
+            aux.append(GUI.Button("Eliminar", k=f'_ELIM-{bed["id"]}'))
             if bed["state"]:
                 aux.append(GUI.Button("Desocupar", k=f'_VCTE-{bed["id"]}'))
             else:
